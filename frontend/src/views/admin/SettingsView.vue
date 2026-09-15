@@ -5746,7 +5746,8 @@
                 <input
                   v-model="form.openai_codex_user_agent"
                   type="text"
-                  class="input w-full font-mono text-sm"
+                  class="input w-full font-mono text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="isCodexDesktopClient"
                   :placeholder="
                     isCodexDesktopClient
                       ? t(
@@ -5759,9 +5760,13 @@
                 />
                 <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                   {{
-                    t(
-                      "admin.settings.gatewayForwarding.openaiCodexUserAgentHint",
-                    )
+                    isCodexDesktopClient
+                      ? t(
+                          "admin.settings.gatewayForwarding.openaiCodexUserAgentDesktopHint",
+                        )
+                      : t(
+                          "admin.settings.gatewayForwarding.openaiCodexUserAgentHint",
+                        )
                   }}
                 </p>
               </div>

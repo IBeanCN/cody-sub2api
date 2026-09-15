@@ -431,6 +431,25 @@ func TestGetOpenAICodexCanonicalUserAgentRebuildsPanelUAVersion(t *testing.T) {
 	})
 }
 
+// 回归（评审意见）：Desktop 模式不消费面板全局 UA——它是 CLI 语义输入，
+// 拼进 Desktop 身份会产出「首段 Desktop、中段 CLI」的混合形态。
+func TestGetOpenAICodexCanonicalUserAgentDesktopIgnoresPanelUA(t *testing.T) {
+	t.Cleanup(ResetCodexClientTypeOverride)
+	SetCodexClientType("desktop")
+
+	svc := NewSettingService(&codexVersionSettingRepoStub{values: map[string]string{
+		SettingKeyOpenAICodexUserAgent:                  "codex-tui/0.146.1 (Ubuntu 22.4.0; x86_64) WindowsTerminal (codex-tui; 0.146.1)",
+		SettingKeyOpenAICodexClientVersion:              "0.155.0-alpha.1|26.909.10000",
+		SettingKeyOpenAICodexDesktopCLIVersionSynced:    "0.155.0-alpha.6",
+		SettingKeyOpenAICodexDesktopClientVersionSynced: "26.908.70816",
+	}}, nil)
+
+	got := svc.GetOpenAICodexCanonicalUserAgent(context.Background())
+	// 面板双位置生效，与面板全局 UA 无关。
+	require.Equal(t, buildCodexDesktopUserAgent("0.155.0-alpha.1", "26.909.10000"), got)
+	require.NotContains(t, got, "Ubuntu")
+}
+
 func (r *codexVersionSyncSettingRepoStub) Get(_ context.Context, key string) (*Setting, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

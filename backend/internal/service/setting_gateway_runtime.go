@@ -390,30 +390,26 @@ func (s *SettingService) InvalidateOpenAICodexClientVersionCache() {
 //
 // 面板 UA 只贡献客户端名与 OS / 架构 / 终端指纹，版本段一律用生效版本重建：该输入框是
 // 唯一能改 UA 后缀的地方，但它填写于某个历史版本，逐字沿用会把出站身份永久钉死在陈旧
-// 版本上并绕过自动同步——而陈旧身份正是上游优先降载的那一侧。
-// 需要固定版本请填「Codex 客户端版本号」并关闭自动同步。
+// 版本上并绕过自动同步。需要固定版本请填「Codex 客户端版本号」并关闭自动同步。
 //
 // Desktop 模式：返回值是双版本 UA（`Codex Desktop/{cli} (…; …) unknown (Codex Desktop; {app})`），
 // 首段 CLI 版本由 GetOpenAICodexClientVersion 供给，尾组 App 版本由
 // GetOpenAICodexDesktopAppVersion 供给（面板位置 2 或 appcast 同步值）。
+// 注意：Desktop 模式不消费面板全局 UA（CLI 语义与 Desktop 指纹段不可拼接，
+// 详见函数体内的注释）。
 func (s *SettingService) GetOpenAICodexCanonicalUserAgent(ctx context.Context) string {
 	if s == nil {
 		return codexCLIUserAgent
 	}
 	version := s.GetOpenAICodexClientVersion(ctx)
-	ua := strings.TrimSpace(s.GetOpenAICodexUserAgent(ctx))
 	if IsCodexDesktopClient() {
-		// 面板 UA 为空，或恰为 CLI 默认形态（getter 对空值返回的兜底，并非真正自定义）
-		// 时都视为「未设置」：CLI 形态没有 Desktop 官方尾组，若当作已自定义重建失败，
-		// 出站会被钉死在单版本错配身份上。
-		if ua == "" || ua == DefaultOpenAICodexUserAgent {
-			return buildCodexDesktopUserAgent(version, s.GetOpenAICodexDesktopAppVersion(ctx))
-		}
-		if rebuilt := openai.SetCodexDesktopUserAgentVersions(ua, version, s.GetOpenAICodexDesktopAppVersion(ctx)); rebuilt != "" {
-			return rebuilt
-		}
-		return ua
+		// Desktop 模式不使用面板全局 UA：该输入是 CLI 语义（OS / 架构 / 终端段为
+		// CLI 形态），与 Desktop 的官方 Mac OS 指纹段拼接会产出「首段 Desktop、
+		// 中段 CLI」的混合身份。需要自定义 Desktop 指纹时，应扩展 Desktop 专属
+		// 输入，而不是复用全局 UA。
+		return buildCodexDesktopUserAgent(version, s.GetOpenAICodexDesktopAppVersion(ctx))
 	}
+	ua := strings.TrimSpace(s.GetOpenAICodexUserAgent(ctx))
 	if ua == "" {
 		return buildCodexCLIUserAgent(version)
 	}
