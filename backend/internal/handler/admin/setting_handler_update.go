@@ -2311,6 +2311,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AntigravityUserAgentVersion:                            updatedSettings.AntigravityUserAgentVersion,
 		OpenAICodexUserAgent:                                   updatedSettings.OpenAICodexUserAgent,
 		OpenAICodexClientType:                                  updatedSettings.OpenAICodexClientType,
+		OpenAICodexDesktopClientVersionSynced:                  updatedSettings.OpenAICodexDesktopClientVersionSynced,
+		OpenAICodexDesktopCLIVersionSynced:                     updatedSettings.OpenAICodexDesktopCLIVersionSynced,
 		OpenAICodexClientVersion:                               updatedSettings.OpenAICodexClientVersion,
 		OpenAICodexClientVersionSynced:                         updatedSettings.OpenAICodexClientVersionSynced,
 		OpenAICodexVersionAutoSyncEnabled:                      updatedSettings.OpenAICodexVersionAutoSyncEnabled,
