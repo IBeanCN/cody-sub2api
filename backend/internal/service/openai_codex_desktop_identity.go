@@ -383,6 +383,21 @@ func (s *SettingService) InvalidateOpenAICodexClientTypeCache() {
 	codexClientTypeCacheVal.Store((*cachedCodexClientType)(nil))
 }
 
+// PeekCachedOpenAICodexClientType 只读内存缓存中的客户端类型，不回源 DB。
+// 供保存路径做「类型是否变化」的对比：缓存缺失（过期/冷启动）时返回空串，
+// 由调用方保守处理（视为已变化，多补一次幂等同步），保证保存路径零额外查库。
+func (s *SettingService) PeekCachedOpenAICodexClientType() string {
+	if s == nil {
+		return ""
+	}
+	if cached, ok := codexClientTypeCacheVal.Load().(*cachedCodexClientType); ok && cached != nil {
+		if time.Now().UnixNano() < cached.expiresAt {
+			return cached.value
+		}
+	}
+	return ""
+}
+
 // codexClientTypeChangeHook 类型变化后置钩子（异步调用）。由 wire 装配同步服务时
 // 注入 TriggerSyncNow：管理员切换客户端类型后立即补一次同步，不必等下一个 6h 周期。
 var codexClientTypeChangeHook atomic.Value // func()

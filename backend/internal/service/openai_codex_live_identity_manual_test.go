@@ -51,7 +51,9 @@ func (c *liveGitHubReleaseClient) do(ctx context.Context, path string, out any) 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		return fmt.Errorf("github api %s: %s %s", path, resp.Status, string(body))

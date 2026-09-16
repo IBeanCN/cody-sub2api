@@ -743,11 +743,12 @@ func (s *SettingService) refreshCachedSettings(settings *SystemSettings) {
 	// Desktop 双位置版本（面板 `v1|v2`）共用同一面板输入，保存后成对失效。
 	s.InvalidateCodexDesktopPanelVersionsCache()
 	// 客户端身份类型保存后立即失效缓存，出站身份切换即时生效（无需重启）。
-	// 失效前先取缓存中的旧值做对比：类型确实变化时通知同步服务立即补一次同步，
-	// 让新类型的 synced 版本号马上可用（否则要等下一个 6h 周期）。
-	previousClientType := s.GetOpenAICodexClientType(context.Background())
+	// 只读内存缓存对比旧类型（不回源 DB，保存路径零额外查库）：类型变化时通知
+	// 同步服务立即补一次同步，让新类型的 synced 版本号马上可用（否则要等下一个
+	// 6h 周期）。缓存缺失（冷启动/已过期）时保守视为已变化——同步幂等，多跑无害。
+	previousClientType := s.PeekCachedOpenAICodexClientType()
 	s.InvalidateOpenAICodexClientTypeCache()
-	if previousClientType != NormalizeCodexClientType(settings.OpenAICodexClientType) {
+	if previousClientType == "" || previousClientType != NormalizeCodexClientType(settings.OpenAICodexClientType) {
 		notifyCodexClientTypeChanged()
 	}
 	openAIAdvancedSchedulerSettingSF.Forget(openAIAdvancedSchedulerSettingKey)
